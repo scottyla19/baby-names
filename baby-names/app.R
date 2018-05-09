@@ -7,7 +7,7 @@ library(data.table)
 # use data.table fread for increased speed
 df <- fread("names-all-years.csv") %>% as.data.frame()
 df <- select( df, -(V1))
-head(df)
+
 sortedUniqueNames <- unique(df$Name) %>% sort()
 
 # Define UI for application that draws a histogram
@@ -19,7 +19,9 @@ ui <- fluidPage(
                tabPanel("Popular Names", fluid = TRUE,
                  sidebarLayout(
                    sidebarPanel(
-                    
+                     radioButtons("selected_gender", label = "Select a gender:",
+                                  choices = list("Female" = "F", "Male" = "M", "Either" = "E"), 
+                                  selected = "F"),
                      sliderInput("year_range",
                                  "Range of Years",
                                  min = 1880,
@@ -49,8 +51,7 @@ ui <- fluidPage(
                    ),
                    
                    mainPanel(
-                     plotOutput("nameTimeSeries"),
-                     textOutput("test")
+                     plotOutput("nameTimeSeries")
                    )
                  )
                )
@@ -63,13 +64,28 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-   output$test <- renderText(input$selected_gender)
-   
-   # output$popular_plot <-renderText(filter(df, Year >= input$year_range[1] & Year <= input$year_range[2]))
+
    output$popular_plot <-renderPlot({
-     filteredDF <- filter(df, Year >= input$year_range[1] & Year <= input$year_range[2]) %>% group_by(Name) %>% summarise(total = sum(n)) %>% arrange(desc(total),Name)
+     filteredDF <- filter(df, Year >= 2000 & Year <= 2016 & Gender == "M") %>% 
+       group_by(Name, Gender) %>% 
+       summarise(total = sum(n)) %>% 
+       arrange(desc(total)) %>%
+       top_n((10))
      
-     ggplot(data=filteredDF[1:10,], aes(Name, total)) +
+     girlsDF <- filter(df, Year >= 2000 & Year <= 2016 & Gender == "F") %>% 
+       group_by(Name, Gender) %>% 
+       summarise(total = sum(n)) %>% 
+       arrange(desc(total)) %>%
+       top_n(10)
+     
+     if (input$selected_gender == "E") {
+       filteredDF <- rbind(girlsDF, filteredDF)
+     } else if (input$selected_gender == "F"){
+       filteredDF <- girlsDF
+     }
+     
+
+     ggplot(data=filteredDF, aes(Name, total, color = Gender)) +
        geom_col()
    })
 
