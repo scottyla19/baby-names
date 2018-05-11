@@ -15,15 +15,13 @@ server = app.server
 app.title = "Baby Name Analyzer"
 app.css.config.serve_locally = True
 app.scripts.config.serve_locally = True
-#df= pd.read_csv('http://files.zillowstatic.com/research/public/Zip/Zip_MedianValuePerSqft_AllHomes.csv')
 df = pd.read_csv('names-all-years.csv')
 df.drop('Unnamed: 0', axis=1, inplace=True)
 uniqueNames = df.Name.unique()
 namesOptions = [{'label':n, 'value': n} for n in sorted(uniqueNames)]
+babyBlue = ['rgb(137, 207, 240)']*10
+babyPink = ['rgb(244, 194, 194)']*10
 
-
-
-app = dash.Dash()
 
 # Since we're adding callbacks to elements that don't exist in the app.layout,
 # Dash will raise an exception to warn us that we might be
@@ -33,39 +31,59 @@ app = dash.Dash()
 app.config.suppress_callback_exceptions = True
 
 app.layout = html.Div([
+    html.Div([ html.Meta(name='viewport', content='width=device-width, initial-scale=1.0'),
+    html.Link(
+        rel='stylesheet',
+        href='/static/styles.css'
+    ),
     dcc.Location(id='url', refresh=False),
     html.Div(id='page-content')
 ])
-
-
-index_page = html.Div([
-    dcc.Link('Popular Names', href='/popular'),
-    html.Br(),
-    dcc.Link('Names Over Time', href='/time'),
 ])
 
-page_1_layout = html.Div([
-    html.H1('Popular Names'),
-    dcc.Link('Names Over Time', href='/time'),
-    dcc.Link('Home', href='/'),
-    html.H3("Gender"),
-    dcc.RadioItems(id='gender-select',
-        options=[
-            {'label': 'Female', 'value': 'F'},
-            {'label': 'Male', 'value': 'M'},
-            {'label': 'Both', 'value': 'E'}
-        ],
-        value='F'
-    ),
-    html.H3("Year Range"),
-    html.H4(id='output-container-range-slider'),
-    dcc.RangeSlider(id = 'popular-names-slider',
-        marks={i:"{}".format(i) for i in range(1880,2016,10)},
-        min=1880,
-        max=2016,
-        value=[2000,2016],
 
-    ),
+index_page =  html.Div(className='header',children = [
+        dcc.Link('Popular Names', href='/popular'),
+        html.Br(),
+        dcc.Link('Names Over Time', href='/time'),
+    ])
+
+page_1_layout = html.Div([html.Div(className='header',children = [
+        html.H1('Popular Names', className='header-title'),
+        dcc.Link('Names Over Time', className='header-link',href='/time'),
+        dcc.Link('Home', className='header-link', href='/'),
+    ]),
+    # html.Div
+    # html.H1('Popular Names', className='header-title'),
+    # dcc.Link('Names Over Time', className='header-link',href='/time'),
+    # dcc.Link('Home', className='header-link',href='/'),
+    html.Div([
+        html.Div([
+        html.H3("Gender"),
+        dcc.RadioItems(id='gender-select',
+            options=[
+                {'label': 'Female', 'value': 'F'},
+                {'label': 'Male', 'value': 'M'},
+                {'label': 'Both', 'value': 'E'}
+            ],
+            value='E'
+        )
+        ], className='input-item')
+        ], className='input-group'),
+    html.Div([
+        html.Div([
+            html.H3("Year Range"),
+            html.H4(id='output-container-range-slider'),
+            dcc.RangeSlider(id = 'popular-names-slider',
+                marks={i:"{}".format(i) for i in range(1880,2016,10)},
+                min=1880,
+                max=2016,
+                value=[2000,2016],
+
+            )], className='input-item-large')
+
+        ],className='input-group'),
+
     dcc.Graph(id='popular-graph'),
 
 
@@ -110,32 +128,32 @@ def page_1_slider(value):
     return '{}-{}'.format(value[0], value[1])
 
 
-page_2_layout = html.Div([
-    html.H1('Names Over Time'),
-    dcc.Link('Popular Names', href='/popular'),
-    dcc.Link('Home', href='/'),
-    html.H3("Gender"),
-    dcc.RadioItems(id='gender-select',
-        options=[
-            {'label': 'Female', 'value': 'F'},
-            {'label': 'Male', 'value': 'M'},
-            {'label': 'Both', 'value': 'E'}
-        ],
-        value='E'
-    ),
-    dcc.Dropdown(id="name-select",
-        options=namesOptions,
-        value=namesOptions[randint(0,len(namesOptions)-1)].get('value')
-    ),
-    # html.H3("Year Range"),
-    # html.H4(id='output-container-range-slider'),
-    # dcc.RangeSlider(id = 'popular-names-slider',
-    #     marks={i:"{}".format(i) for i in range(1880,2016,10)},
-    #     min=1880,
-    #     max=2016,
-    #     value=[1880,2016],
-    #
-    # ),
+page_2_layout =html.Div([html.Div(className='header',children = [
+        html.H1('Names Over Time', className='header-title'),
+        dcc.Link('Popular Names', className='header-link',href='/popular'),
+        dcc.Link('Home', className='header-link', href='/'),
+    ]),
+    html.Div([
+        html.Div([
+        html.H3("Gender"),
+        dcc.RadioItems(id='gender-select',
+            options=[
+                {'label': 'Female', 'value': 'F'},
+                {'label': 'Male', 'value': 'M'},
+                {'label': 'Both', 'value': 'E'}
+            ],
+            value='E'
+        )
+        ], className='input-item'),
+        html.Div([
+            html.H3("Select a Name"),
+            dcc.Dropdown(id="name-select",
+                options=namesOptions,
+                value=namesOptions[randint(0,len(namesOptions)-1)].get('value')
+            )
+        ], className='input-item')
+
+    ],className='input-group'),
 
     dcc.Graph(id='time-graph'),
 ])
@@ -150,18 +168,20 @@ def popularGraph(name, gender):
     traces = []
     for i in filteredDf.Gender.unique():
         curDf = filteredDf[filteredDf.Gender == i]
+        curColor = babyBlue[0]
+        if i == "F":
+            curColor = babyPink[0]
         traces.append(go.Scatter(
                     x=curDf.Year,
                     y=curDf.n,
                     mode='lines+markers',
-                    name=i
+                    name=i,
+                    marker=go.Marker(
+                        color=curColor
+
+                    )
                 ))
-    # traces = [go.Scatter(
-    #             x=filteredDf.Year,
-    #             y=filteredDf.n,
-    #             mode='lines+markers'
-    #         )
-    #     ]
+
     return {
         'data': traces,
         'layout': go.Layout(
